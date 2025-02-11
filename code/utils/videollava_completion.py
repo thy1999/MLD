@@ -1,5 +1,4 @@
 import sys
-# 导入 log 模块目录
 sys.path.append("/Video-LLaVA-main")
 import torch
 from videollava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN

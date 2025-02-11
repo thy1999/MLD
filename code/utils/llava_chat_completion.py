@@ -3,7 +3,6 @@ import torch
 
 #llava
 import sys
-# 导入 log 模块目录
 sys.path.append("/LLaVA-main")
 
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN

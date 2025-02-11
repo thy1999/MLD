@@ -12,18 +12,7 @@ from tqdm import tqdm
 from transformers import LlamaForCausalLM, AutoTokenizer
 import ast
 import torch
-# from utils.llama_chat_completion_lora import initialize_Llama
-# from utils.llama.tokenizer import Tokenizer
-# from utils.llama.model import ModelArgs, Transformer
-# import transformers
-# from utils.vicuna.fastchat.modules.gptq import GptqConfig
-# from utils.vicuna.fastchat.modules.awq import AWQConfig
 
-# from fairscale.nn.model_parallel.initialize import (
-#     get_model_parallel_rank,
-#     initialize_model_parallel,
-#     model_parallel_is_initialized,
-# )
 
 #qwen
 from transformers import AutoModelForCausalLM, AutoTokenizer
@@ -36,7 +25,6 @@ import signal
 import time
 
 import sys
-# 导入 log 模块目录
 sys.path.append("/Video-LLaVA-main")
 import torch
 from videollava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN
@@ -66,7 +54,6 @@ from transformers import TextStreamer
 import re
 from collections import defaultdict
 import sys
-# 导入 log 模块目录
 sys.path.append("Baichuan2-main/fine-tune_cp")
 from core.utils import AverageMeter
 from terminaltables import AsciiTable
@@ -80,9 +67,8 @@ from transformers import GenerationConfig, LlamaForCausalLM, LlamaTokenizer, Aut
 import signal
 import time
 
-# 定义处理超时的函数
 def handler(signum, frame):
-    raise TimeoutError("运行超时")
+    raise TimeoutError("Timeout")
 
 NAME_LIST=[
     "Affirmative side",
@@ -91,24 +77,15 @@ NAME_LIST=[
 ]
 
 
-#把span,labels变成树
+
 def spans_labels_to_tree(sentence, spans,labels):
     words = sentence.split()
     length=len(words)
-   
-    # 将 spans 和 labels 组合
     combined = list(zip(spans, labels))
-
-    # 按照 spans 的排序规则进行排序
     sorted_combined = sorted(combined, key=lambda x: (x[0][1], -x[0][0]))
-
-    # 解压缩回 spans 和 labels
     sorted_spans, sorted_labels = zip(*sorted_combined)
-
-    # 转换为列表（可选）
     unique_spans  = list(sorted_spans)
     labels = list(sorted_labels)
-
     tree = [(i, "") for i in range(length)]
     tree = dict(tree)
     result=""
@@ -126,7 +103,7 @@ def spans_labels_to_tree(sentence, spans,labels):
             result=result+words[j]+" "
     return  result.strip()
 
-#把span变成（）
+
 def spans_to_tree(sentence, spans):
     words = sentence.split()
     length=len(words)
@@ -150,9 +127,7 @@ def spans_to_tree(sentence, spans):
             result=result+words[j]+" "
     return  result.strip()
 
-#把()变成[]
 def small_to_mid_transform(sentence):
-    ### ()转换为[]
     stack = []
     current = []
     word = ''
@@ -180,7 +155,7 @@ def small_to_mid_transform(sentence):
         current.append(word)
     return current[0]
 
-#把（）变成span，无重复
+
 def extract_spans_from_tree(tree, words):
     """
     Extract spans from a constituency parse tree based on the original sentence word indexes.
@@ -231,9 +206,9 @@ def extract_spans_from_tree(tree, words):
         return spans
 
     def remove_duplicates(lst):
-        # 使用集合去重，先将内部列表转换为元组
+
         unique_tuples = set(tuple(x) for x in lst)
-        # 将去重后的元组转换回列表
+
         unique_lists = [list(x) for x in unique_tuples]
         return unique_lists
     # Tokenize the tree and find spans
@@ -241,7 +216,7 @@ def extract_spans_from_tree(tree, words):
     spans = find_span(tokens)
     return remove_duplicates(spans)
 
-#把（）变成span,有重复
+
 def extract_spans_from_tree_hh(tree, words):
     """
     Extract spans from a constituency parse tree based on the original sentence word indexes.
@@ -296,7 +271,6 @@ def extract_spans_from_tree_hh(tree, words):
     spans = find_span(tokens)
     return spans
 
-#把[]变成（）
 def to_parentheses_format(components):
     if isinstance(components, str):
         return components
@@ -304,7 +278,7 @@ def to_parentheses_format(components):
         inner_parts = [to_parentheses_format(c) for c in components]
         return '(' + ' '.join(inner_parts) + ')'
 
-#把（）变成成分
+
 def extract_constituents_from_tree(tree, words):
     """
     Extract spans from a constituency parse tree based on the original sentence word indexes.
@@ -355,24 +329,17 @@ def extract_constituents_from_tree(tree, words):
         return spans
     
     def remove_duplicates(lst):
-        # 使用集合去重，先将内部列表转换为元组
         unique_tuples = set(tuple(x) for x in lst)
-        # 将去重后的元组转换回列表
         unique_lists = [list(x) for x in unique_tuples]
         return unique_lists
     # Tokenize the tree and find spans
 
     def spans_to_words(words, spans):
-        # 存储转换后的单词跨度
         words_from_spans = []
-
         for span in spans:
-            # 跨度开始和结束
             start, end = span
-            # 提取跨度对应的单词序列，使用join连接成字符串
             span_words = ' '.join(words[start:end+1])
             words_from_spans.append(span_words)
-
         return words_from_spans
 
 
@@ -385,18 +352,16 @@ def extract_constituents_from_tree(tree, words):
 
 def extract_words(nested_list):
     words = []
-    # 定义一个递归函数来处理嵌套列表
     def extract_words_recursive(nested):
         for item in nested:
             if isinstance(item, list):
                 extract_words_recursive(item)
             elif isinstance(item, str):
-                # 根据空格分割单词
                 words.extend(item.split())
     extract_words_recursive(nested_list)
     return words
 
- ### 根据标签找到对应的文本并进行提取。
+
 def Find_Start_End_with_Label(ori_str, label):
     if label == "mid":
         return ori_str[ori_str.find("["):ori_str.rfind("]")+1]
@@ -423,7 +388,7 @@ def Find_Start_End_with_Label(ori_str, label):
                 raise ValueError("Invalid output(Judge)")
 
 
-# 检查每个字符，如果是单引号或双引号，并且该引号的后面没有紧跟着另一个引号，则进行修复
+
 def fix_missing_quotes(s):
     fixed_string = ''
     fuhao=""
@@ -442,27 +407,27 @@ def fix_missing_quotes(s):
                 in_quotes = False
             fixed_string += char
             fuhao += char 
-        elif in_quotes and char == ':':  # 处理缺失的引号
+        elif in_quotes and char == ':':  
             if fixed_string[-1]!=fuhao[-1]:
-                fixed_string += fuhao[-1]  # 检查前一个字符的引号类型
+                fixed_string += fuhao[-1]  
             else:
                 fixed_string =  fixed_string[:index0+count+1] + fuhao[-1] + fixed_string[index0+count+1:] 
             count=count+1
             fixed_string += char
             fuhao += char
             in_quotes = False
-        elif in_quotes and char == '}':  # 处理缺失的引号
+        elif in_quotes and char == '}':  
             if fixed_string[-1]!=fuhao[-1]:
-                fixed_string += fuhao[-1]  # 检查前一个字符的引号类型
+                fixed_string += fuhao[-1]  
             else:
                 fixed_string =  fixed_string[:index0+count+1] + fuhao[-1] + fixed_string[index0+count+1:] 
             count=count+1
             fixed_string += char
             fuhao += char
             in_quotes = False
-        elif in_quotes and char ==',':  # 处理缺失的引号
+        elif in_quotes and char ==',':  
             if fixed_string[-1]!=fuhao[-1]:
-                fixed_string += fuhao[-1]  # 检查前一个字符的引号类型
+                fixed_string += fuhao[-1]  
             else:
                 fixed_string =  fixed_string[:index0+count+1] + fuhao[-1] + fixed_string[index0+count+1:] 
             count=count+1
@@ -471,7 +436,6 @@ def fix_missing_quotes(s):
             in_quotes = False
         else:
             fixed_string += char
-    # 如果最后一个字符是引号，但没有配对的引号，补全引号
     if in_quotes:
         fixed_string += fuhao[-1]
         in_quotes = False
@@ -479,7 +443,6 @@ def fix_missing_quotes(s):
 
 
 def Parentheses_Match(text):
-    ### 确保小括号匹配。
     stack = []
     for char in text:
         if char == '(':
@@ -496,20 +459,17 @@ def Parentheses_Match(text):
 
 def extract_words(nested_list):
     words = []
-    # 定义一个递归函数来处理嵌套列表
     def extract_words_recursive(nested):
         for item in nested:
             if isinstance(item, list):
                 extract_words_recursive(item)
             elif isinstance(item, str):
-                # 根据空格分割单词
                 words.extend(item.split())
     extract_words_recursive(nested_list)
     return words
 
 
 def match_words(sentence, pred):
-    ### 单词匹配，保证原始句子中的单词与嵌套列表中的单词一致。
     nested_lst = small_to_mid_transform(pred)
     assert type(nested_lst)==list
     nested_str = str(nested_lst)
@@ -599,7 +559,6 @@ def match_words(sentence, pred):
     return to_parentheses_format(new_s)
 
 def Format_output(sentence, pred_out):
-    ### 输出标准化。
     prefix_word = sentence.split()[0]
     second_word = sentence.split()[1]
     third_word = sentence.split()[2]
@@ -617,12 +576,11 @@ def Format_output(sentence, pred_out):
     lst4 = pattern4.split(pred_out, 1)[1:]
     pred_out=''.join(lst1)
     pred_out4=''.join(lst4)
-    if match1: #匹配第一第二个单词
+    if match1:
         pred_out='('+match1.group(0).replace(match2.group(0),prefix_word).replace(match3.group(0),second_word) +pred_out
-    elif match4: #匹配第二第三个单词
+    elif match4: 
         pred_out='('+prefix_word+' '+match4.group(0).replace(match3.group(0),second_word) +pred_out4
-    # elif match2: #匹配第一个单词
-    #     pred_out='('+match2.group(0).replace(match2.group(0),prefix_word) +pred_out2
+
     pred_out = pred_out.replace("1. (","(").replace("'[","[")
     response_list = ["No.","Yes.","Okay."]
     if pred_out in response_list or pred_out[:-1]==sentence:
@@ -650,7 +608,7 @@ def Format_output(sentence, pred_out):
     pred_text = Parentheses_Match(pred_out)
     # seq_len=len(sentence.split())
     if pred_text.replace("(","").replace(")","")==sentence or " ".join(extract_words(small_to_mid_transform(pred_text)))==sentence:
-        spans_list=extract_spans_from_tree(pred_text,sentence.split()) #利用span列表去重
+        spans_list=extract_spans_from_tree(pred_text,sentence.split())
         spans_list=[sublist for sublist in spans_list if sublist[0] != sublist[1]]
         pred_text = spans_to_tree(sentence, spans_list)
         if bracket_flag:
@@ -658,7 +616,7 @@ def Format_output(sentence, pred_out):
         return pred_text
     else:
         pred_new = match_words(sentence, pred_text)
-        spans_list=extract_spans_from_tree(pred_new,sentence.split()) #利用span列表去重
+        spans_list=extract_spans_from_tree(pred_new,sentence.split())
         spans_list=[sublist for sublist in spans_list if sublist[0] != sublist[1]]
         pred_new = spans_to_tree(sentence, spans_list)
         if bracket_flag:
@@ -805,23 +763,6 @@ class DebatePlayer(Agent):
             sleep_time (float): sleep because of rate limits
         """
         super(DebatePlayer, self).__init__(model_name, name, temperature, sleep_time)
-        
-        # self.model = LlamaForCausalLM.from_pretrained(hf_model_path, device_map="auto")
-        # self.tokenizer = AutoTokenizer.from_pretrained(hf_model_path)
-        # if model_name == 'llava1.5' or model_name == 'llava1_6':
-        #     self.llava_model=llava_model
-        #     self.llava_tokenizer=llava_tokenizer
-        #     self.llava_image_processor=llava_image_processor
-        #     self.llava_context_len=llava_context_len
-        #     self.llava1_6_model=llava1_6_model
-        #     self.llava1_6_tokenizer=llava1_6_tokenizer
-        #     self.llava1_6_image_processor=llava1_6_image_processor
-        #     self.llava1_6_context_len=llava1_6_context_len
-        #     self.image_file=image_file
-        # elif model_name == "qwen":
-        #     self.qwen_model = qwen_model
-        #     self.qwen_tokenizer = qwen_tokenizer
-        #     self.image_file=image_file
         if model_name=='intern2_vl':
             self.intern2_vl_model = intern2_vl_model
             self.intern2_vl_tokenizer = intern2_vl_tokenizer
@@ -917,12 +858,6 @@ class Debate:
         prompt_replace("negative_prompt")
         prompt_replace("debate_prompt")
         prompt_replace("judge_prompt_last")
-        #prompt_replace("debate_prompt_round2")
-
-    # def create_base(self, llama2_pred, vicuna_pred):
-
-    #     self.save_file['llama2_pred'] = llama2_pred
-    #     self.save_file['vicuna_pred'] = vicuna_pred
 
 
     def creat_agents(self):
@@ -977,14 +912,14 @@ class Debate:
                     break
             except TimeoutError as e:
                 flag=1
-                if str(e) == "运行超时":
-                    print("捕获到运行超时错误，任务被中断。")
+                if str(e) == "Timeout":
+                    print("A runtime timeout error was caught, and the task was interrupted.")
                     break
             except Exception as e:
                     print("An error occurred:", e)
                     print("Trying again...")
         if flag==1:
-            raise TimeoutError("运行超时")
+            raise TimeoutError("Timeout")
         self.affirmative.add_memory(self.aff_ans)
 
      
@@ -998,8 +933,7 @@ class Debate:
                     self.neg_ans='('+self.save_file['sentence']+')'
                     break
                 self.neg_ans1 = self.negative.ask()
-                #print(self.neg_ans1)
-                #import pdb;pdb.set_trace()
+
                 try:
                     self.neg_ans = Format_output(self.save_file['sentence'], self.neg_ans1.split('My_result: ')[-1].split('Your_result: ')[-1].split("correction:")[-1].split("correct result")[-1]) 
                 except Exception as e:
@@ -1016,14 +950,14 @@ class Debate:
                     break
             except TimeoutError as e:
                 flag=1
-                if str(e) == "运行超时":
-                    print("捕获到运行超时错误，任务被中断。")
+                if str(e) == "Timeout":
+                    print("A runtime timeout error was caught, and the task was interrupted.")
                     break
             except Exception as e:
                     print("An error occurred:", e)
                     print("Trying again...")
         if flag==1:
-            raise TimeoutError("运行超时")
+            raise TimeoutError("Timeout")
         self.negative.add_memory(self.neg_ans)
 
         aff_ans=self.aff_ans
@@ -1032,7 +966,7 @@ class Debate:
         if aff_ans == neg_ans :
             hh_ans = {"supported side": "Draw","round_1 constituency parsing result": aff_ans} 
             self.judge.add_memory(hh_ans)
-            self.save_file.update(hh_ans) #把这个字典更新进去
+            self.save_file.update(hh_ans) 
             self.save_file['success'] = True
         # ultimate deadly technique.
         else:
@@ -1056,14 +990,14 @@ class Debate:
                         break
                 except TimeoutError as e:
                     flag=1
-                    if str(e) == "运行超时":
-                        print("捕获到运行超时错误，任务被中断。")
+                    if str(e) == "Timeout":
+                        print("A runtime timeout error was caught, and the task was interrupted.")
                         break
                 except Exception as e:
                         print("An error occurred:", e)
                         print("Trying again...")
             if flag==1:
-                raise TimeoutError("运行超时")
+                raise TimeoutError("Timeout")
             self.judge.add_memory(ans)
             if ans != '':
                 self.save_file['success'] = True
@@ -1151,14 +1085,14 @@ class Debate:
                         break
                 except TimeoutError as e:
                     flag=1
-                    if str(e) == "运行超时":
-                        print("捕获到运行超时错误，任务被中断。")
+                    if str(e) == "Timeout":
+                        print("A runtime timeout error was caught, and the task was interrupted.")
                         break
                 except Exception as e:
                         print("An error occurred:", e)
                         print("Trying again...")
             if flag==1:
-                raise TimeoutError("运行超时")
+                raise TimeoutError("Timeout")
             self.affirmative.add_memory(self.aff_ans)
 
             self.negative.add_event(self.save_file['debate_prompt'].replace('##oppo_ans##', self.aff_ans))
@@ -1188,8 +1122,8 @@ class Debate:
                         break
                 except TimeoutError as e:
                     flag=1
-                    if str(e) == "运行超时":
-                        print("捕获到运行超时错误，任务被中断。")
+                    if str(e) == "Timeout":
+                        print("A runtime timeout error was caught, and the task was interrupted.")
                         break
                 except torch.cuda.OutOfMemoryError as e:
                     break
@@ -1197,7 +1131,7 @@ class Debate:
                         print("An error occurred:", e)
                         print("Trying again...")
             if flag==1:
-                raise TimeoutError("运行超时")
+                raise TimeoutError("Timeout")
             self.negative.add_memory(self.neg_ans)  
 
             
@@ -1207,7 +1141,7 @@ class Debate:
             if aff_ans == neg_ans :
                 hh_ans = {"supported side": "Draw","round_{} constituency parsing result".format(round+2): aff_ans} 
                 self.judge.add_memory(hh_ans)
-                self.save_file.update(hh_ans) #把这个字典更新进去
+                self.save_file.update(hh_ans) 
                 self.save_file['success'] = True
             # ultimate deadly technique.
             else:
@@ -1231,14 +1165,14 @@ class Debate:
                             break
                     except TimeoutError as e:
                         flag=1
-                        if str(e) == "运行超时":
-                            print("捕获到运行超时错误，任务被中断。")
+                        if str(e) == "Timeout":
+                            print("A runtime timeout error was caught, and the task was interrupted.")
                             break
                     except Exception as e:
                             print("An error occurred:", e)
                             print("Trying again...")
                 if flag==1:
-                    raise TimeoutError("运行超时")
+                    raise TimeoutError("Timeout")
                 self.judge.add_memory(ans)
                 if ans != '':
                     self.save_file['success'] = True
@@ -1357,7 +1291,6 @@ if __name__ == "__main__":
     config = json.load(open(f"config4cp_lora_coco.json", "r"))
 
     
-    #读取videollava模型结果
     cache_dir = 'cache_dir'
     device = torch.device("cuda:0")
     load_4bit, load_8bit = False, False
@@ -1367,7 +1300,6 @@ if __name__ == "__main__":
     videollava_tokenizer, videollava_model, videollava_processor, _ = load_pretrained_model(videollava_model_path, videollava_model_base, model_name, load_8bit, load_4bit, device=device, cache_dir=cache_dir)
 
     device = torch.device("cuda:1")
-    #读取intern2-vl模型结果
     path = '/checkpoint-112-merged'
     intern2_vl_model = AutoModel.from_pretrained(
         path,
@@ -1402,12 +1334,8 @@ if __name__ == "__main__":
 
         for line in file:
             line_cnt+=1
-
             data = json.loads(line)
-            # 获取 id 键对应的值
             id_value = data.get('id')
-            
-            # 获取另一个键对应的值（假设这个键为 'other_key'）
             caps= data.get("caption")
             spans = data.get("span")
             labels = data.get("label")
@@ -1418,24 +1346,20 @@ if __name__ == "__main__":
             config['gold_label']=labels
             config['gold_span']=spans
             config['img']=image_file 
-            with open(prompts_path, 'w') as file: #创建保存文件0-config.json
+            with open(prompts_path, 'w') as file: 
                 json.dump(config, file, ensure_ascii=False, indent=4)
-            #设置超时的处理器
             signal.signal(signal.SIGALRM, handler)
-            signal.alarm(450)  # 设置超时时间为600秒
+            signal.alarm(450)  
             try:
                 debate = Debate(save_file_dir=save_file_dir, num_players=3, prompts_path=prompts_path, temperature=0, sleep_time=0,videollava_model=videollava_model, videollava_tokenizer=videollava_tokenizer,videollava_processor=videollava_processor,intern2_vl_model=intern2_vl_model, intern2_vl_tokenizer=intern2_vl_tokenizer, image_file=config['img'])
                 debate.run()
                 debate.save_file_to_json(line_cnt)
-                
-                
             except  Exception as e:
                 with open("data/problem.txt", 'a+', encoding='utf-8') as problem_file:
                     temp = str(line_cnt)+"\t\t"+caps+"\n"
                     problem_file.write(temp)
                     problem_data.append(temp)
                     continue
-            # 取消警报
             signal.alarm(0)
             
 

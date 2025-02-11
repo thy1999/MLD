@@ -5,8 +5,8 @@ import random
 #from openai.error import RateLimitError, APIError, ServiceUnavailableError, APIConnectionError
 
 from transformers import LlamaForCausalLM, AutoTokenizer
-from utils.llava_chat_completion import Llama_generate  #导入llava评估的方法
-from utils.qwen_chat_completion import Qwen_generate  #导入llava评估的方法
+from utils.llava_chat_completion import Llama_generate  
+from utils.qwen_chat_completion import Qwen_generate 
 from utils.videollava_completion import videollava_generate
 from utils.intern2_vl_completion import intern2_vl_generate
 from utils.qwen2_vl_completion import qwen2_vl_generate
@@ -49,8 +49,6 @@ class Agent:
         # time.sleep(self.sleep_time)
         assert self.model_name in support_models, f"Not support {self.model_name}. Choices: {support_models}"
         if self.model_name in support_models:
-            # num_context_token = sum([num_tokens_from_string(m["content"], self.model_name) for m in self.memory_lst])
-            # max_token = model2max_context[self.model_name] - num_context_token
             messages = [messages]
             if self.model_name == 'qwen':
                 gen=Qwen_generate(self.qwen_tokenizer,
