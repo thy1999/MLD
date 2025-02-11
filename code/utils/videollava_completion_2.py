@@ -1,6 +1,6 @@
 import sys
 # 导入 log 模块目录
-sys.path.append("/public/home/dzhang/pyProject/hytian/XModel/Video-LLaVA-main")
+sys.path.append("/Video-LLaVA-main")
 
 import argparse
 import os
@@ -32,7 +32,7 @@ def videollava_generate(videollava_tokenizer,
                   temperature: float = 0.2,
                   max_new_tokens: int = 2048,
                 ):
-    model_name = get_model_name_from_path('/public/home/dzhang/pyProject/hytian/XModel/Video-LLaVA-main/Video-LLaVA-7B')
+    model_name = get_model_name_from_path('/Video-LLaVA-main/Video-LLaVA-7B')
     image_processor, video_processor = videollava_processor['image'], videollava_processor['video']
     if 'llama-2' in model_name.lower():
         conv_mode = "llava_llama_2"

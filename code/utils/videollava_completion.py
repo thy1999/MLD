@@ -1,6 +1,6 @@
 import sys
 # 导入 log 模块目录
-sys.path.append("/public/home/dzhang/pyProject/hytian/XModel/Video-LLaVA-main")
+sys.path.append("/Video-LLaVA-main")
 import torch
 from videollava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN
 from videollava.conversation import conv_templates, SeparatorStyle
@@ -19,7 +19,7 @@ def videollava_generate(videollava_tokenizer,
                   temperature: float = 0.2,
                   max_new_tokens: int = 2048,
                 ):
-    model_name = get_model_name_from_path('/public/home/dzhang/pyProject/hytian/XModel/Video-LLaVA-main/Video-LLaVA-7B')
+    model_name = get_model_name_from_path('/Video-LLaVA-main/Video-LLaVA-7B')
     video_processor = videollava_processor['video']
     conv_mode = "llava_v1"
     # if 'llama-2' in model_name.lower():

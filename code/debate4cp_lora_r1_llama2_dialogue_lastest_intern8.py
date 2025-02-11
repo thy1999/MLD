@@ -1,20 +1,3 @@
-"""
-MAD: Multi-Agent Debate with Large Language Models
-Copyright (C) 2023  The MAD Team
-
-This program is free software: you can redistribute it and/or modify
-it under the terms of the GNU General Public License as published by
-the Free Software Foundation, either version 3 of the License, or
-(at your option) any later version.
-
-This program is distributed in the hope that it will be useful,
-but WITHOUT ANY WARRANTY; without even the implied warranty of
-MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-GNU General Public License for more details.
-
-You should have received a copy of the GNU General Public License
-along with this program.  If not, see <http://www.gnu.org/licenses/>.
-"""
 
 import time
 from pathlib import Path
@@ -54,7 +37,7 @@ import time
 
 import sys
 # 导入 log 模块目录
-sys.path.append("/public/home/dzhang/pyProject/hytian/XModel/Video-LLaVA-main")
+sys.path.append("/Video-LLaVA-main")
 import torch
 from videollava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN
 from videollava.conversation import conv_templates, SeparatorStyle
@@ -84,7 +67,7 @@ import re
 from collections import defaultdict
 import sys
 # 导入 log 模块目录
-sys.path.append("/public/home/dzhang/pyProject/hytian/Baichuan2-main/fine-tune_cp")
+sys.path.append("Baichuan2-main/fine-tune_cp")
 from core.utils import AverageMeter
 from terminaltables import AsciiTable
 
@@ -822,10 +805,7 @@ class DebatePlayer(Agent):
             sleep_time (float): sleep because of rate limits
         """
         super(DebatePlayer, self).__init__(model_name, name, temperature, sleep_time)
-        # if self.model_name == "llama2":
-        #     hf_model_path = '/public/home/dzhang/pyProject/hytian/ZModel/llama-main/llama-2-7b-chat'
-        # elif self.model_name== "videollava":
-        #     hf_model_path = '/public/home/dzhang/pyProject/hytian/ZModel/Video-LLaVA-main/LanguageBind/Video-LLaVA-7B'
+        
         # self.model = LlamaForCausalLM.from_pretrained(hf_model_path, device_map="auto")
         # self.tokenizer = AutoTokenizer.from_pretrained(hf_model_path)
         # if model_name == 'llava1.5' or model_name == 'llava1_6':
@@ -1299,7 +1279,6 @@ def load_model(base_model, model,lora_weights,load_8bit) -> tuple:
 
     if model == 'LLaMA-7B':
         tokenizer = LlamaTokenizer.from_pretrained(base_model)
-        #tokenizer = Tokenizer(model_path="/public/home/dzhang/pyProject/hytian/ZModel/llama-main/llama-2-7b-chat-hf/tokenizer.model")
     else:
         tokenizer = AutoTokenizer.from_pretrained(base_model)
 
@@ -1375,21 +1354,21 @@ if __name__ == "__main__":
     
     current_script_path = os.path.abspath(__file__)
     MAD_path = current_script_path.rsplit("/", 2)[0]
-    config = json.load(open(f"{MAD_path}/code/utils/config4cp_lora_coco.json", "r"))
+    config = json.load(open(f"config4cp_lora_coco.json", "r"))
 
     
     #读取videollava模型结果
     cache_dir = 'cache_dir'
     device = torch.device("cuda:0")
     load_4bit, load_8bit = False, False
-    videollava_model_path = '/public/home/dzhang/pyProject/hytian/XModel/Video-LLaVA-main/checkpoints/videollava-7b-lora'
-    videollava_model_base='/public/home/dzhang/pyProject/hytian/XModel/Video-LLaVA-main/Video-LLaVA-7B'
+    videollava_model_path = '/Video-LLaVA-main/checkpoints/videollava-7b-lora'
+    videollava_model_base='/Video-LLaVA-main/Video-LLaVA-7B'
     model_name = get_model_name_from_path(videollava_model_path)   
     videollava_tokenizer, videollava_model, videollava_processor, _ = load_pretrained_model(videollava_model_path, videollava_model_base, model_name, load_8bit, load_4bit, device=device, cache_dir=cache_dir)
 
     device = torch.device("cuda:1")
     #读取intern2-vl模型结果
-    path = '/public/home/dzhang/pyProject/hytian/XModel/InternVL-main/output/internvl2-8b/v5-20250103-102018/checkpoint-112-merged'
+    path = '/checkpoint-112-merged'
     intern2_vl_model = AutoModel.from_pretrained(
         path,
         torch_dtype=torch.bfloat16,
@@ -1415,7 +1394,7 @@ if __name__ == "__main__":
     llm_pred_data = []
 
     
-    test_gold_caps_path='/public/home/dzhang/pyProject/hytian/XModel/Qwen2-VL/youcookii_text_to_video_last.json'
+    test_gold_caps_path='youcookii_text_to_video_last.json'
 
     
     with open(test_gold_caps_path,'r',encoding='utf-8') as file:

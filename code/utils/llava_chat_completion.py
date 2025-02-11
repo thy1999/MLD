@@ -4,7 +4,7 @@ import torch
 #llava
 import sys
 # 导入 log 模块目录
-sys.path.append("/public/home/dzhang/pyProject/hytian/YModel/LLaVA-main")
+sys.path.append("/LLaVA-main")
 
 from llava.constants import IMAGE_TOKEN_INDEX, DEFAULT_IMAGE_TOKEN, DEFAULT_IM_START_TOKEN, DEFAULT_IM_END_TOKEN
 from llava.conversation import conv_templates, SeparatorStyle

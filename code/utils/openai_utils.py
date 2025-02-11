@@ -40,7 +40,7 @@ class AccessTerminatedException(Exception):
 
 def num_tokens_from_string(string: str, model_name: str) -> int:
     """Returns the number of tokens in a text string."""
-    hf_model_path = '/public/home/dzhang/pyProject/hytian/ZModel/llama-main/llama-2-7b-chat'
+    hf_model_path = '/llama-main/llama-2-7b-chat'
     tokenizer = AutoTokenizer.from_pretrained(hf_model_path)
     inputs = tokenizer(string, return_tensors="pt")
     num_tokens = len(inputs['input_ids'][0])
