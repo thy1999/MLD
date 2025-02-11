@@ -413,22 +413,6 @@ def extract_words(nested_list):
     extract_words_recursive(nested_list)
     return words
 
-# def Parentheses_Match(text):
-#     ### 确保中括号匹配。
-#     stack = []
-#     for char in text:
-#         if char == '[':
-#             stack.append(char)
-#         elif char == ']':
-#             if stack:
-#                 stack.pop()
-#             else:
-#                 # Ideally, this situation should not occur if input is expected to have more '[' than ']'
-#                 text = '[' + text  # Prepend a missing '['
-#     # Append missing ']' for each unmatched '['
-#     text += ']' * len(stack)
-#     return text
-
  ### 根据标签找到对应的文本并进行提取。
 def Find_Start_End_with_Label(ori_str, label):
     if label == "mid":
@@ -611,8 +595,6 @@ def match_words(sentence, pred):
                 break
             new_s += tp
             i += 1
-    # if sentence == "\ it started in 1882 with the Winnipeg Fire Department and grew from there .":
-    #     #import pdb;pdb.set_trace()
     if st!=len(words_list):
         new_s = str(eval(new_s))
         ind = new_s.rfind("'")
@@ -690,12 +672,6 @@ def Format_output(sentence, pred_out):
         pred_text = spans_to_tree(sentence, spans_list)
         if bracket_flag:
             pred_text = pred_text.replace("##bracket##","]")
-        # count = spans_list.count([0, seq_len-1])
-        # while count > 1:
-        #     pred_text = pred_text[1:-1]   # 去除字符串两端的括号
-        #     count -= 1
-        # if count == 1:
-        #     return pred_text
         return pred_text
     else:
         pred_new = match_words(sentence, pred_text)
@@ -704,13 +680,6 @@ def Format_output(sentence, pred_out):
         pred_new = spans_to_tree(sentence, spans_list)
         if bracket_flag:
             pred_new = pred_new.replace("##bracket##","]")
-        # count = spans_list.count([0, seq_len-1])
-        # while count > 1:
-        #     pred_new = pred_new[1:-1]   # 去除字符串两端的括号
-        #     count -= 1
-        # if count == 1:
-        #     return pred_new
- 
         return pred_new
 
 
@@ -1092,7 +1061,7 @@ class Debate:
                 try:
                     flag=0
                     cnt+=1
-                    if cnt>2:
+                    if cnt>3:
                         ans = {"supported side": "Negative","round_1 constituency parsing result": neg_ans}
                         break
                     ans = self.judge.ask()
@@ -1173,8 +1142,6 @@ class Debate:
 
         for round in range(self.max_round - 1):
             print(f"===== Debate Round-{round+2} =====\n")
-            #.remove_last_memory()
-            #import pdb;pdb.set_trace()
             
             self.affirmative.add_event(self.save_file['debate_prompt'].replace('##oppo_ans##', self.neg_ans))
            
@@ -1188,8 +1155,6 @@ class Debate:
                         self.aff_ans='('+self.save_file['sentence']+')'
                         break
                     self.aff_ans1 = self.affirmative.ask()
-                   # print(self.aff_ans1)
-                    #import pdb;pdb.set_trace()
                     try:
                         self.aff_ans = Format_output(self.save_file['sentence'], self.aff_ans1.split('My_result')[-1].split('Your_result')[-1].split("correction:")[-1].split("correct result")[-1]) 
                     except Exception as e:
@@ -1227,8 +1192,6 @@ class Debate:
                         self.neg_ans='('+self.save_file['sentence']+')'
                         break
                     self.neg_ans1 = self.negative.ask()
-                    # print(self.neg_ans1)
-                    # import pdb;pdb.set_trace()
                     try:
                         self.neg_ans = Format_output(self.save_file['sentence'], self.neg_ans1.split('My_result: ')[-1].split('Your_result: ')[-1].split("correction:")[-1].split("correct result")[-1])
                     except Exception as e:
@@ -1451,10 +1414,7 @@ if __name__ == "__main__":
     problem_data = []
     llm_pred_data = []
 
-    # test_imgs_path='/public/home/dzhang/pyProject/hytian/YModel/MSCOCO/images_list/test2014_imgs_path_list.json'
-    # test_gold_caps_path='/public/home/dzhang/pyProject/hytian/YModel/MSCOCO/mscoco/test_gold_caps.json'
     
-  
     test_gold_caps_path='/public/home/dzhang/pyProject/hytian/XModel/Qwen2-VL/youcookii_text_to_video_last.json'
 
     
@@ -1462,14 +1422,6 @@ if __name__ == "__main__":
         line_cnt=-1
 
         for line in file:
-            # if line_cnt+1 not in [1049]:
-            #     line_cnt+=1
-            #     continue
-            if line_cnt>=1200:  #100张图,500个条字幕
-                break
-            # if line_cnt<1200:
-            #     line_cnt+=1
-            #     continue
             line_cnt+=1
 
             data = json.loads(line)
@@ -1481,8 +1433,6 @@ if __name__ == "__main__":
             spans = data.get("span")
             labels = data.get("label")
             image_file = data.get('video_path')
-
-
             
             prompts_path = f"{save_file_dir}/{line_cnt}-config.json"
             config['sentence']=caps
