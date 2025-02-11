@@ -1,0 +1,152 @@
+
+
+import time
+import random
+#from openai.error import RateLimitError, APIError, ServiceUnavailableError, APIConnectionError
+
+from transformers import LlamaForCausalLM, AutoTokenizer
+from utils.llava_chat_completion import Llama_generate  #导入llava评估的方法
+from utils.qwen_chat_completion import Qwen_generate  #导入llava评估的方法
+from utils.videollava_completion import videollava_generate
+from utils.intern2_vl_completion import intern2_vl_generate
+from utils.qwen2_vl_completion import qwen2_vl_generate
+
+support_models = ['gpt-3.5-turbo', 'gpt-3.5-turbo-0301', 'gpt-4', 'gpt-4-0314', "llama2", "videollava", "vicuna", "llava1.5","llava1_6","qwen",'videollava','intern2_vl','qwen2_vl']
+
+class Agent:
+    def __init__(self, model_name: str, name: str, temperature: float, sleep_time: float=0) -> None:
+        """Create an agent
+
+        Args:
+            model_name(str): model name
+            name (str): name of this agent
+            temperature (float): higher values make the output more random, while lower values make it more focused and deterministic
+            sleep_time (float): sleep because of rate limits
+        """
+        self.model_name = model_name
+        self.name = name
+        self.temperature = temperature
+        self.memory_lst = []
+        self.sleep_time = sleep_time
+
+    #@backoff.on_exception(backoff.expo, (RateLimitError, APIError, ServiceUnavailableError, APIConnectionError), max_tries=20)
+    def query(self, messages: "list[dict]", temperature: float) -> str:
+        """make a query
+
+        Args:
+            messages (list[dict]): chat history in turbo format
+            max_tokens (int): max token in api call
+            api_key (str): openai api key
+            temperature (float): sampling temperature
+
+        Raises:
+            OutOfQuotaException: the apikey has out of quota
+            AccessTerminatedException: the apikey has been ban
+
+        Returns:
+            str: the return msg
+        """
+        # time.sleep(self.sleep_time)
+        assert self.model_name in support_models, f"Not support {self.model_name}. Choices: {support_models}"
+        if self.model_name in support_models:
+            # num_context_token = sum([num_tokens_from_string(m["content"], self.model_name) for m in self.memory_lst])
+            # max_token = model2max_context[self.model_name] - num_context_token
+            messages = [messages]
+            if self.model_name == 'qwen':
+                gen=Qwen_generate(self.qwen_tokenizer,
+                  self.qwen_model, 
+                  self.image_file,
+                  messages,
+                  temperature= 0.2,
+                  max_new_tokens = 512,
+                )
+
+            elif self.model_name == 'llava1.5':
+                gen=Llama_generate(self.llava_tokenizer,
+                   self.llava_model, 
+                   self.llava_image_processor, 
+                   self.llava_context_len,
+                   self.image_file,
+                   messages,
+                   temperature = 0.2,
+                   max_new_tokens = 512,
+                )
+            
+            elif self.model_name == 'llava1_6':
+                gen=Llama_generate(self.llava1_6_tokenizer,
+                   self.llava1_6_model, 
+                   self.llava1_6_image_processor, 
+                   self.llava1_6_context_len,
+                   self.image_file,
+                   messages,
+                   temperature = 0.2,
+                   max_new_tokens = 512,
+                )
+            elif self.model_name == 'videollava':
+                #import pdb;pdb.set_trace()
+                gen=videollava_generate(self.videollava_tokenizer,self.videollava_model,  self.videollava_processor, self.image_file,messages,temperature = 0.2,max_new_tokens = 2048,)
+            elif self.model_name == 'intern2_vl':
+                #import pdb;pdb.set_trace()
+                gen=intern2_vl_generate(self.intern2_vl_tokenizer,self.intern2_vl_model, self.image_file,messages,temperature = 0.2,max_new_tokens = 2048,)
+            elif self.model_name == 'qwen2_vl':
+                #import pdb;pdb.set_trace()
+                gen=qwen2_vl_generate(self.qwen2_vl_processor,self.qwen2_vl_model, self.image_file,messages,temperature = 0.2,max_new_tokens = 2048,)
+
+        else:
+            import pdb;pdb.set_trace()
+        return gen
+
+    def set_meta_prompt(self, meta_prompt: str):
+        """Set the meta_prompt
+
+        Args:
+            meta_prompt (str): the meta prompt
+        """
+        self.memory_lst.append({"role": "system", "content": f"{meta_prompt}"})
+
+    def add_event(self, event: str):
+        """Add an new event in the memory
+
+        Args:
+            event (str): string that describe the event.
+        """
+        self.memory_lst.append({"role": "user", "content": f"{event}"})
+
+    def add_memory(self, memory: str):
+        """Monologue in the memory
+
+        Args:
+            memory (str): string that generated by the model in the last round.
+        """
+        self.memory_lst.append({"role": "assistant", "content": f"{memory}"})
+        print(f"----- {self.name} -----\n{memory}\n")
+
+    def remove_last_memory(self):
+        self.memory_lst = self.memory_lst[:-1]
+
+    def ask(self, temperature: float=None):
+        """Query for answer
+
+        Args:
+        """
+        # query
+        # num_context_token = sum([num_tokens_from_string(m["content"], self.model_name) for m in self.memory_lst])
+        # max_token = model2max_context[self.model_name] - num_context_token
+        return self.query(self.memory_lst, temperature=temperature if temperature else self.temperature)
+        # return self.query(temperature=temperature if temperature else self.temperature)
+    
+    def stream_output(self, output_stream):
+        pre = 0
+        SS = ""
+        for outputs in output_stream:
+            output_text = outputs["text"]
+            output_text = output_text.strip().split(" ")
+            now = len(output_text) - 1
+            if now > pre:
+                SS+=(" ".join(output_text[pre:now]))
+                # print(" ".join(output_text[pre:now]), end=" ", flush=True)
+                pre = now
+        # print(" ".join(output_text[pre:]), flush=True)
+        return " ".join(output_text)
+
+
